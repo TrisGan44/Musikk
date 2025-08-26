@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Soundwave - Music Visualizer & Editor</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="container">
+    <header class="header">
+      <h1>Soundwave</h1>
+      <p>Unggah audio, edit, balikkan (reverse) berkali‑kali, lalu unduh hasilnya.</p>
+    </header>
+
+    <section class="viz card">
+      <canvas id="visualizer" width="960" height="240" aria-label="Visualisasi audio"></canvas>
+    </section>
+
+    <section class="uploader card">
+      <label class="file-label">
+        <input type="file" id="fileInput" accept="audio/*" />
+        <span>Pilih Berkas Audio</span>
+      </label>
+      <div id="fileMeta" class="file-meta" hidden></div>
+      <div id="error" class="error" hidden></div>
+    </section>
+
+    <section class="controls card" aria-label="Pemutar">
+      <div class="row">
+        <button id="playBtn" class="btn primary" disabled>Putar</button>
+        <button id="stopBtn" class="btn" disabled>Stop</button>
+        <button id="reverseBtn" class="btn" disabled>Reverse: OFF</button>
+        <button id="downloadBtn" class="btn" disabled>Unduh WAV</button>
+      </div>
+
+      <div class="row">
+        <label class="stack">
+          <span>Waktu</span>
+          <input type="range" id="progress" min="0" max="1000" value="0" step="1" disabled />
+          <div class="time">
+            <span id="currentTime">0:00</span>
+            <span id="duration">0:00</span>
+          </div>
+        </label>
+      </div>
+
+      <div class="row grid-3">
+        <label class="stack">
+          <span>Volume</span>
+          <input type="range" id="volume" min="0" max="1" value="1" step="0.01" disabled />
+        </label>
+        <label class="stack">
+          <span>Kecepatan</span>
+          <input type="range" id="rate" min="0.5" max="2" value="1" step="0.05" disabled />
+          <small id="rateLabel">1.00×</small>
+        </label>
+        <label class="stack">
+          <span>Visual Gain</span>
+          <input type="range" id="vizGain" min="0.5" max="4" value="1.5" step="0.1" />
+        </label>
+      </div>
+    </section>
+
+    <section class="edit card" aria-label="Potong">
+      <div class="row grid-3">
+        <label class="stack">
+          <span>Potong dari (detik)</span>
+          <input type="number" id="trimStart" min="0" step="0.01" value="0" disabled />
+        </label>
+        <label class="stack">
+          <span>Sampai (detik)</span>
+          <input type="number" id="trimEnd" min="0" step="0.01" value="5" disabled />
+        </label>
+        <div class="stack">
+          <span>&nbsp;</span>
+          <button id="applyCutBtn" class="btn warn" disabled>Terapkan Potong</button>
+        </div>
+      </div>
+      <small>Tips: Reverse bisa diklik berkali‑kali. Klik 2× untuk kembali normal.</small>
+    </section>
+
+    <footer class="footer">
+      <small>Made with Web Audio API</small>
+    </footer>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
