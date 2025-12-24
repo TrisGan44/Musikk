@@ -17,6 +17,29 @@
       <canvas id="visualizer" width="960" height="240" aria-label="Visualisasi audio"></canvas>
     </section>
 
+    <section class="timeline card" aria-label="Timeline editor">
+      <div class="timeline-header">
+        <div>
+          <p class="eyebrow">Editor</p>
+          <h2>Timeline</h2>
+          <small>Geser playhead atau klik untuk loncat waktu. Tambahkan klip berdasarkan rentang trim.</small>
+        </div>
+        <button id="addClipBtn" class="btn" disabled>+ Tambah Klip</button>
+      </div>
+
+      <div class="timeline-shell">
+        <div class="timeline-ruler" id="timelineRuler" aria-hidden="true"></div>
+        <div class="timeline-body" id="timelineBody">
+          <div class="playhead" id="playhead" role="presentation"></div>
+          <div class="track" id="timelineTrack">
+            <div class="clip base" id="baseClip">Audio</div>
+            <div class="clip selection" id="selectionClip" hidden></div>
+          </div>
+          <div class="track" id="clipTrack"></div>
+        </div>
+      </div>
+    </section>
+
     <section class="uploader card">
       <label class="file-label">
         <input type="file" id="fileInput" accept="audio/*" />
