@@ -80,6 +80,13 @@ body {
   margin-bottom: 16px;
 }
 
+.timeline-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .timeline-shell {
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -112,13 +119,80 @@ body {
   background: var(--border);
 }
 
+.timeline-ruler span.active {
+  color: var(--text);
+  text-shadow: 0 0 10px rgba(0,212,255,0.6);
+}
+
 .timeline-body {
   position: relative;
   background: radial-gradient(circle at 10% 10%, rgba(0,212,255,0.08), transparent 25%),
               radial-gradient(circle at 90% 40%, rgba(0,255,136,0.08), transparent 22%),
               #0b0c11;
-  padding: 18px 14px 24px;
+  padding: 18px 14px 12px;
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
+
+.timeline-body::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(0,212,255,0.08) 0px,
+    rgba(0,212,255,0.08) 2px,
+    transparent 2px,
+    transparent 6px
+  );
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.timeline-content {
+  position: relative;
+  min-width: 100%;
+  width: var(--timeline-zoom, 100%);
+  padding-bottom: 12px;
+}
+
+.timeline-hover {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.timeline-hover::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(255,255,255,0.25);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  left: var(--hover-pos, 0);
+}
+
+.timeline-hover.show::after { opacity: 1; }
+
+.timeline-hover .hover-label {
+  position: absolute;
+  top: 4px;
+  left: var(--hover-client, 0px);
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  background: rgba(0,0,0,0.8);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 11px;
+  color: var(--text);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease, top 0.15s ease;
+}
+
+.timeline-hover.show .hover-label { opacity: 1; }
 
 .track {
   position: relative;
@@ -147,7 +221,10 @@ body {
   text-shadow: 0 3px 12px rgba(0,0,0,0.4);
   box-shadow: 0 12px 30px rgba(59,130,246,0.25);
   user-select: none;
+  gap: 8px;
 }
+
+.clip .clip-label { font-weight: 600; }
 
 .clip.selection {
   background: linear-gradient(135deg, rgba(0,255,136,0.25), rgba(0,255,136,0.55));
@@ -156,9 +233,100 @@ body {
   top: 24px;
   height: 26px;
   font-size: 12px;
+  padding: 0 10px;
 }
 
 .clip.base { left: 0; right: 0; }
+
+.clip[data-selected="true"] {
+  outline: 2px solid var(--accent);
+  box-shadow: 0 12px 40px rgba(0,212,255,0.3);
+}
+
+.clip .delete-btn {
+  border: none;
+  background: rgba(0,0,0,0.35);
+  color: #fff;
+  border-radius: 8px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.clip .delete-btn:hover { background: rgba(0,0,0,0.55); }
+
+.handle {
+  position: absolute;
+  top: -6px;
+  width: 10px;
+  height: 38px;
+  background: var(--accent);
+  border-radius: 10px;
+  box-shadow: 0 0 12px rgba(0,212,255,0.6);
+  cursor: ew-resize;
+}
+
+.handle-start { left: -6px; }
+.handle-end { right: -6px; }
+
+.marker-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.marker {
+  position: absolute;
+  top: -6px;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 10px solid var(--warn);
+  filter: drop-shadow(0 2px 6px rgba(245,158,11,0.4));
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.marker::after {
+  content: attr(data-label);
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.7);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.timeline-minimap {
+  position: relative;
+  height: 32px;
+  background: linear-gradient(90deg, rgba(96,165,250,0.08), rgba(0,212,255,0.08));
+  border-top: 1px solid var(--border);
+}
+
+.minimap-window {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  background: rgba(0,212,255,0.12);
+  border: 1px solid rgba(0,212,255,0.35);
+  border-radius: 10px;
+}
+
+.minimap-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(0,212,255,0.5);
+}
 
 .track + .track { margin-top: 16px; }
 
@@ -169,6 +337,7 @@ body {
   width: 2px;
   background: var(--accent);
   box-shadow: 0 0 20px rgba(0,212,255,0.4);
+  transition: left 0.12s ease;
 }
 
 .playhead::before {
@@ -180,6 +349,21 @@ body {
   border-right: 8px solid transparent;
   border-bottom: 10px solid var(--accent);
   filter: drop-shadow(0 2px 6px rgba(0,212,255,0.35));
+}
+
+.playhead:hover::after {
+  content: attr(data-time);
+  position: absolute;
+  top: -28px;
+  left: -40px;
+  min-width: 80px;
+  text-align: center;
+  background: rgba(0,0,0,0.75);
+  color: var(--text);
+  padding: 4px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  font-size: 11px;
 }
 
 .row { 

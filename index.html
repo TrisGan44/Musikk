@@ -22,21 +22,36 @@
         <div>
           <p class="eyebrow">Editor</p>
           <h2>Timeline</h2>
-          <small>Geser playhead atau klik untuk loncat waktu. Tambahkan klip berdasarkan rentang trim.</small>
+          <small>Geser playhead, klik, atau drag untuk loncat waktu. Tambahkan klip berdasarkan rentang trim.</small>
         </div>
-        <button id="addClipBtn" class="btn" disabled>+ Tambah Klip</button>
+        <div class="timeline-actions" aria-label="Kontrol timeline">
+          <button id="zoomOutBtn" class="btn" aria-label="Zoom out" disabled>−</button>
+          <button id="zoomInBtn" class="btn" aria-label="Zoom in" disabled>+</button>
+          <button id="zoomResetBtn" class="btn" aria-label="Reset zoom" disabled>Reset</button>
+          <button id="addMarkerBtn" class="btn" aria-label="Tambah marker" disabled>+ Marker</button>
+          <button id="addClipBtn" class="btn" disabled>+ Tambah Klip</button>
+        </div>
       </div>
 
       <div class="timeline-shell">
         <div class="timeline-ruler" id="timelineRuler" aria-hidden="true"></div>
         <div class="timeline-body" id="timelineBody">
-          <div class="playhead" id="playhead" role="presentation"></div>
-          <div class="track" id="timelineTrack">
-            <div class="clip base" id="baseClip">Audio</div>
-            <div class="clip selection" id="selectionClip" hidden></div>
+          <div class="timeline-hover" id="timelineHover" aria-hidden="true"></div>
+          <div class="timeline-content" id="timelineContent">
+            <div class="playhead" id="playhead" role="presentation" aria-label="Playhead" tabindex="0"></div>
+            <div class="marker-layer" id="markerLayer" aria-hidden="true"></div>
+            <div class="track" id="timelineTrack">
+              <div class="clip base" id="baseClip">Audio</div>
+              <div class="clip selection" id="selectionClip" hidden>
+                <div class="handle handle-start" data-handle="start" aria-label="Geser awal trim"></div>
+                <div class="handle handle-end" data-handle="end" aria-label="Geser akhir trim"></div>
+                <div class="clip-label" id="selectionLabel"></div>
+              </div>
+            </div>
+            <div class="track" id="clipTrack"></div>
           </div>
-          <div class="track" id="clipTrack"></div>
         </div>
+        <div class="timeline-minimap" id="timelineMinimap" aria-hidden="true"></div>
       </div>
     </section>
 
