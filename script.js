@@ -22,6 +22,8 @@ let startStamp = 0;         // audioCtx.currentTime saat start
 let pauseOffset = 0;        // detik yang sudah ditempuh saat pause
 let rafId = null;
 
+let timelineClips = [];
+
 let vizGain = 1.5;
 
 // Elements
@@ -49,6 +51,15 @@ const trimEnd     = document.getElementById("trimEnd");
 const canvas = document.getElementById("visualizer");
 const ctx = canvas.getContext("2d");
 
+const timelineRuler = document.getElementById("timelineRuler");
+const timelineBody = document.getElementById("timelineBody");
+const timelineTrack = document.getElementById("timelineTrack");
+const clipTrack = document.getElementById("clipTrack");
+const playheadEl = document.getElementById("playhead");
+const baseClipEl = document.getElementById("baseClip");
+const selectionClip = document.getElementById("selectionClip");
+const addClipBtn = document.getElementById("addClipBtn");
+
 // Helpers
 const fmt = s => {
   if (!isFinite(s)) return "0:00";
@@ -64,7 +75,7 @@ function setError(msg) {
 
 function enableControls(on) {
   [playBtn, stopBtn, reverseBtn, downloadBtn, progress,
-   volume, rate, trimStart, trimEnd, applyCutBtn].forEach(el => { el.disabled = !on; });
+   volume, rate, trimStart, trimEnd, applyCutBtn, addClipBtn].forEach(el => { el.disabled = !on; });
 }
 
 function resetState() {
@@ -90,6 +101,7 @@ fileInput.addEventListener("change", async (e) => {
     originalBuffer = decoded;
     workingBuffer = decoded;
     reversedBuffer = null;
+    timelineClips = [];
 
     // UI
     fileMeta.hidden = false;
@@ -101,6 +113,7 @@ fileInput.addEventListener("change", async (e) => {
 
     enableControls(true);
     resetState();
+    renderTimeline();
     drawVisualizer(); // akan idle sampai analyser dibuat saat playback
     
     // Pindahkan uploader ke bawah setelah file dipilih
@@ -205,6 +218,76 @@ function updateReverseBtn() {
   reverseBtn.textContent = `🔄 Reverse: ${isReversed ? "ON" : "OFF"}`;
 }
 
+// Timeline helpers
+function getTimelineDuration() {
+  return getActiveBuffer()?.duration || 0;
+}
+
+function timeToPercent(time, duration) {
+  if (!duration) return 0;
+  const clamped = Math.max(0, Math.min(duration, time));
+  return (clamped / duration) * 100;
+}
+
+function renderRuler(duration) {
+  if (!timelineRuler) return;
+  timelineRuler.innerHTML = "";
+  if (!duration) return;
+
+  const segments = Math.min(12, Math.max(6, Math.floor(duration)));
+  const step = duration / segments;
+  const frag = document.createDocumentFragment();
+  for (let i = 0; i <= segments; i++) {
+    const mark = document.createElement("span");
+    mark.textContent = `${(i * step).toFixed(0)}s`;
+    frag.appendChild(mark);
+  }
+  timelineRuler.appendChild(frag);
+}
+
+function renderSelectionClip() {
+  if (!selectionClip) return;
+  const dur = getTimelineDuration();
+  const start = parseFloat(trimStart.value) || 0;
+  const end = parseFloat(trimEnd.value) || 0;
+  if (!dur || end <= start || start >= dur) {
+    selectionClip.hidden = true;
+    return;
+  }
+  selectionClip.hidden = false;
+  selectionClip.textContent = `Trim ${fmt(start)} - ${fmt(Math.min(end, dur))}`;
+  selectionClip.style.left = `${timeToPercent(start, dur)}%`;
+  selectionClip.style.width = `${timeToPercent(end - start, dur)}%`;
+}
+
+function renderClips(duration) {
+  if (!clipTrack) return;
+  clipTrack.innerHTML = "";
+  timelineClips.forEach((clip, idx) => {
+    const el = document.createElement("div");
+    el.className = "clip";
+    el.textContent = clip.label || `Klip ${idx + 1}`;
+    el.style.left = `${timeToPercent(clip.start, duration)}%`;
+    el.style.width = `${timeToPercent(clip.duration, duration)}%`;
+    clipTrack.appendChild(el);
+  });
+}
+
+function renderTimeline() {
+  const dur = getTimelineDuration();
+  renderRuler(dur);
+  if (baseClipEl) baseClipEl.textContent = `Audio • ${fmt(dur)}`;
+  renderSelectionClip();
+  renderClips(dur);
+  updatePlayheadPosition(getCurrentOffset(), dur);
+}
+
+function updatePlayheadPosition(cur, dur) {
+  if (!playheadEl) return;
+  const p = timeToPercent(cur, dur || getTimelineDuration());
+  playheadEl.style.left = `${p}%`;
+}
+
 // Animator
 function tick() {
   const buf = getActiveBuffer();
@@ -212,6 +295,7 @@ function tick() {
   const cur = Math.min(getCurrentOffset(), dur);
   setProgress(dur ? cur / dur : 0);
   updateTimeUI(cur, dur);
+  updatePlayheadPosition(cur, dur);
   rafId = requestAnimationFrame(tick);
 }
 
@@ -303,6 +387,7 @@ stopBtn.addEventListener("click", () => {
   pauseOffset = 0;
   setProgress(0);
   updateTimeUI(0, getActiveBuffer()?.duration || 0);
+  updatePlayheadPosition(0, getActiveBuffer()?.duration || 0);
 });
 
 reverseBtn.addEventListener("click", () => {
@@ -362,6 +447,12 @@ applyCutBtn.addEventListener("click", () => {
 
   workingBuffer = cut;
   reversedBuffer = null; // invalidasi cache
+  timelineClips = timelineClips
+    .filter(c => c.start < workingBuffer.duration)
+    .map(c => ({
+      ...c,
+      duration: Math.min(c.duration, workingBuffer.duration - c.start)
+    }));
   // reset playback ke awal
   pauseOffset = 0;
   stopPlayback();
@@ -373,13 +464,16 @@ applyCutBtn.addEventListener("click", () => {
   trimEnd.max = workingBuffer.duration.toFixed(2);
   trimStart.value = 0;
   trimEnd.value = Math.min(5, workingBuffer.duration).toFixed(2);
+  renderTimeline();
 });
 
 progress.addEventListener("input", () => {
   const buf = getActiveBuffer();
   const dur = buf?.duration || 0;
   const frac = parseInt(progress.value, 10) / 1000;
-  updateTimeUI(dur * frac, dur);
+  const cur = dur * frac;
+  updateTimeUI(cur, dur);
+  updatePlayheadPosition(cur, dur);
 });
 
 progress.addEventListener("change", () => {
@@ -387,6 +481,7 @@ progress.addEventListener("change", () => {
   const dur = buf?.duration || 0;
   const frac = parseInt(progress.value, 10) / 1000;
   pauseOffset = dur * frac;
+  updatePlayheadPosition(pauseOffset, dur);
   if (isPlaying) playFromOffset(pauseOffset);
 });
 
@@ -403,6 +498,39 @@ rate.addEventListener("input", () => {
 
 vizGainEl.addEventListener("input", () => {
   vizGain = parseFloat(vizGainEl.value || "1.5");
+});
+
+[trimStart, trimEnd].forEach(el => {
+  el.addEventListener("input", () => {
+    renderSelectionClip();
+  });
+});
+
+timelineBody.addEventListener("click", (e) => {
+  const dur = getTimelineDuration();
+  if (!dur) return;
+  const rect = timelineBody.getBoundingClientRect();
+  const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  pauseOffset = dur * frac;
+  setProgress(frac);
+  updateTimeUI(pauseOffset, dur);
+  updatePlayheadPosition(pauseOffset, dur);
+  if (isPlaying) playFromOffset(pauseOffset);
+});
+
+addClipBtn.addEventListener("click", () => {
+  if (!workingBuffer || !audioCtx) return;
+  const start = Math.max(0, parseFloat(trimStart.value) || 0);
+  const end = Math.max(0, parseFloat(trimEnd.value) || 0);
+  const dur = workingBuffer.duration;
+  if (start >= end || start >= dur) return setError("Rentang klip tidak valid.");
+  setError("");
+  timelineClips.push({
+    start,
+    duration: Math.min(end, dur) - start,
+    label: `Klip ${timelineClips.length + 1}`
+  });
+  renderClips(dur);
 });
 
 // Utils
